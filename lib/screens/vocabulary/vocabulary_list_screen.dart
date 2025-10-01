@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/vocabulary_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/vocabulary_card.dart';
 import '../../widgets/loading_indicator.dart';
 import 'create_vocabulary_screen.dart';
@@ -18,8 +19,34 @@ class _VocabularyListScreenState extends State<VocabularyListScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<VocabularyProvider>().fetchMyVocabularies(refresh: true);
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.isAuthenticated) {
+        context.read<VocabularyProvider>().fetchMyVocabularies(refresh: true);
+      }
     });
+  }
+
+  void _showLoginPrompt(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('로그인이 필요합니다'),
+        content: const Text('이 기능을 사용하려면 로그인이 필요합니다.\n로그인 화면으로 이동하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/login');
+            },
+            child: const Text('로그인'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -36,13 +63,27 @@ class _VocabularyListScreenState extends State<VocabularyListScreen> {
           ),
         ],
       ),
-      body: Consumer<VocabularyProvider>(
-        builder: (context, provider, child) {
-          if (provider.isLoading && provider.vocabularies.isEmpty) {
+      body: Consumer2<AuthProvider, VocabularyProvider>(
+        builder: (context, authProvider, vocabProvider, child) {
+          // 게스트 모드인 경우
+          if (authProvider.isGuest) {
+            return EmptyState(
+              icon: Icons.login,
+              title: '로그인이 필요합니다',
+              subtitle: '내 단어장을 만들고 관리하려면 로그인하세요',
+              action: ElevatedButton.icon(
+                icon: const Icon(Icons.login),
+                label: const Text('로그인'),
+                onPressed: () => Navigator.pushNamed(context, '/login'),
+              ),
+            );
+          }
+
+          if (vocabProvider.isLoading && vocabProvider.vocabularies.isEmpty) {
             return const LoadingIndicator(message: '단어장을 불러오는 중...');
           }
 
-          if (provider.vocabularies.isEmpty) {
+          if (vocabProvider.vocabularies.isEmpty) {
             return EmptyState(
               icon: Icons.book,
               title: '단어장이 없습니다',
@@ -60,9 +101,9 @@ class _VocabularyListScreenState extends State<VocabularyListScreen> {
               await context.read<VocabularyProvider>().fetchMyVocabularies(refresh: true);
             },
             child: ListView.builder(
-              itemCount: provider.vocabularies.length,
+              itemCount: vocabProvider.vocabularies.length,
               itemBuilder: (context, index) {
-                final vocabulary = provider.vocabularies[index];
+                final vocabulary = vocabProvider.vocabularies[index];
                 return VocabularyCard(
                   vocabulary: vocabulary,
                   onTap: () => _navigateToVocabularyDetail(context, vocabulary.id),
@@ -73,9 +114,14 @@ class _VocabularyListScreenState extends State<VocabularyListScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _navigateToCreateVocabulary(context),
-        child: const Icon(Icons.add),
+      floatingActionButton: Consumer<AuthProvider>(
+        builder: (context, authProvider, child) {
+          if (authProvider.isGuest) return const SizedBox.shrink();
+          return FloatingActionButton(
+            onPressed: () => _navigateToCreateVocabulary(context),
+            child: const Icon(Icons.add),
+          );
+        },
       ),
     );
   }

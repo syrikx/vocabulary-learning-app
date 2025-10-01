@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/vocabulary_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../models/vocabulary_model.dart';
 import '../../widgets/vocabulary_card.dart';
 import '../../widgets/loading_indicator.dart';
@@ -290,6 +291,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Future<void> _downloadVocabulary(BuildContext context, int vocabularyId) async {
+    final authProvider = context.read<AuthProvider>();
+
+    // 게스트 모드인 경우 로그인 요구
+    if (authProvider.isGuest) {
+      Navigator.pop(context); // 바텀시트 닫기
+      _showLoginPrompt(context);
+      return;
+    }
+
     Navigator.pop(context); // 바텀시트 닫기
 
     final provider = context.read<VocabularyProvider>();
@@ -310,5 +320,28 @@ class _ExploreScreenState extends State<ExploreScreen> {
         ),
       );
     }
+  }
+
+  void _showLoginPrompt(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('로그인이 필요합니다'),
+        content: const Text('단어장을 다운로드하려면 로그인이 필요합니다.\n로그인 화면으로 이동하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/login');
+            },
+            child: const Text('로그인'),
+          ),
+        ],
+      ),
+    );
   }
 }

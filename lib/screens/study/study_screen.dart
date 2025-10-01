@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/stats_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/loading_indicator.dart';
 
 class StudyScreen extends StatefulWidget {
@@ -15,7 +16,10 @@ class _StudyScreenState extends State<StudyScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<StatsProvider>().fetchUserStats();
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.isAuthenticated) {
+        context.read<StatsProvider>().fetchUserStats();
+      }
     });
   }
 
@@ -33,8 +37,22 @@ class _StudyScreenState extends State<StudyScreen> {
           ),
         ],
       ),
-      body: Consumer<StatsProvider>(
-        builder: (context, provider, child) {
+      body: Consumer2<AuthProvider, StatsProvider>(
+        builder: (context, authProvider, provider, child) {
+          // 게스트 모드인 경우
+          if (authProvider.isGuest) {
+            return EmptyState(
+              icon: Icons.login,
+              title: '로그인이 필요합니다',
+              subtitle: '학습 통계를 확인하려면 로그인하세요',
+              action: ElevatedButton.icon(
+                icon: const Icon(Icons.login),
+                label: const Text('로그인'),
+                onPressed: () => Navigator.pushNamed(context, '/login'),
+              ),
+            );
+          }
+
           if (provider.isLoading && provider.userStats == null) {
             return const LoadingIndicator(message: '통계를 불러오는 중...');
           }

@@ -153,7 +153,7 @@ class WordCard extends StatelessWidget {
         WordDifficulty.fromApiValue(word.difficulty).displayName,
         style: TextStyle(
           fontSize: 11,
-          color: color.shade700,
+          color: Color.lerp(color, Colors.black, 0.3)!,
           fontWeight: FontWeight.bold,
         ),
       ),

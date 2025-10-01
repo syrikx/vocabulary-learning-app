@@ -15,7 +15,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<StatsProvider>().fetchUserStats();
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.isAuthenticated) {
+        context.read<StatsProvider>().fetchUserStats();
+      }
     });
   }
 
@@ -29,6 +32,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         builder: (context, authProvider, statsProvider, child) {
           final user = authProvider.user;
           final stats = statsProvider.userStats;
+          final isGuest = authProvider.isGuest;
 
           return ListView(
             children: [
@@ -46,35 +50,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     CircleAvatar(
                       radius: 50,
                       backgroundColor: Colors.white,
-                      child: Text(
-                        user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                        style: TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade600,
-                        ),
-                      ),
+                      child: isGuest
+                          ? Icon(
+                              Icons.person_outline,
+                              size: 50,
+                              color: Colors.blue.shade600,
+                            )
+                          : Text(
+                              user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                              style: TextStyle(
+                                fontSize: 40,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue.shade600,
+                              ),
+                            ),
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      user?.name ?? 'User',
+                      isGuest ? '게스트' : (user?.name ?? 'User'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Text(
-                      user?.email ?? '',
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
+                    if (!isGuest)
+                      Text(
+                        user?.email ?? '',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
                       ),
-                    ),
+                    if (isGuest) ...[
+                      const SizedBox(height: 8),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pushNamed(context, '/login'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: Colors.blue.shade600,
+                        ),
+                        child: const Text('로그인'),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              if (stats != null) ...[
+              if (!isGuest && stats != null) ...[
                 const SizedBox(height: 16),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -119,15 +141,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
               const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.bar_chart),
-                title: const Text('학습 통계'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                  // 학습 통계 화면으로 이동 (Study 탭)
-                  DefaultTabController.of(context).animateTo(2);
-                },
-              ),
+              if (!isGuest)
+                ListTile(
+                  leading: const Icon(Icons.bar_chart),
+                  title: const Text('학습 통계'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    // 학습 통계 화면으로 이동 (Study 탭)
+                    DefaultTabController.of(context).animateTo(2);
+                  },
+                ),
               ListTile(
                 leading: const Icon(Icons.settings),
                 title: const Text('설정'),
@@ -147,14 +170,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
               ),
               const Divider(),
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text(
-                  '로그아웃',
-                  style: TextStyle(color: Colors.red),
+              if (!isGuest)
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: const Text(
+                    '로그아웃',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  onTap: () => _confirmLogout(context),
                 ),
-                onTap: () => _confirmLogout(context),
-              ),
             ],
           );
         },

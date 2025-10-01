@@ -12,6 +12,7 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _user != null;
+  bool get isGuest => _user == null;
 
   AuthProvider() {
     _user = _authService.getCurrentUser();

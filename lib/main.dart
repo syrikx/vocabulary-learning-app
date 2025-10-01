@@ -58,7 +58,7 @@ class VocabularyApp extends StatelessWidget {
             centerTitle: true,
             elevation: 0,
           ),
-          cardTheme: CardTheme(
+          cardTheme: CardThemeData(
             elevation: 2,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -89,14 +89,7 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        if (authProvider.isAuthenticated) {
-          return const MainNavigationScreen();
-        } else {
-          return const LoginScreen();
-        }
-      },
-    );
+    // 로그인 없이 바로 메인 화면 표시 (게스트 모드 허용)
+    return const MainNavigationScreen();
   }
 }
